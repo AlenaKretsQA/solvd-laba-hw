@@ -7,6 +7,8 @@ import com.solvd.laba.hospitalProject.people.Person;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Optional;
+
 public final class Patient extends Person implements Payable {
 
     public static final Logger LOGGER = LogManager.getLogger(Patient.class);
@@ -38,7 +40,14 @@ public final class Patient extends Person implements Payable {
         Patient.patientCount = patientCount;
     }
 
-
+    public Optional<String> getHealthStatus() {
+        if (disease != null) {
+            String healthStatus = "Patient is managing " + disease + " condition.";
+            return Optional.of(healthStatus);
+        } else {
+            return Optional.empty();
+        }
+    }
 
     @Override
     public String toString() {

@@ -5,6 +5,7 @@ import com.solvd.laba.hospitalProject.departments.*;
 import com.solvd.laba.hospitalProject.exceptions.InvalidPersonException;
 import com.solvd.laba.hospitalProject.exceptions.LaboratoryInvalidEquipmentNameException;
 import com.solvd.laba.hospitalProject.exceptions.LaboratoryInvalidQuantityEquipmentException;
+import com.solvd.laba.hospitalProject.interfaces.ChangeName;
 import com.solvd.laba.hospitalProject.people.employees.Employee;
 import com.solvd.laba.hospitalProject.people.employees.Nurse;
 import com.solvd.laba.hospitalProject.people.patients.Patient;
@@ -20,6 +21,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class HospitalMain {
 
@@ -29,6 +31,13 @@ public class HospitalMain {
     private static final Predicate<Integer> isPositiveNumber = num -> num > 0;
 
     public static void main(String[] args) throws InvalidPersonException {
+        Runnable myRunnable = new MyRunnable();
+
+        Thread thread1 = new Thread(myRunnable);
+        Thread thread2 = new Thread(myRunnable);
+
+        thread1.start();
+        thread2.start();
 
         LOGGER.info("Welcome to Hospital application!");
 
@@ -97,6 +106,7 @@ public class HospitalMain {
         try (Scanner scanner = new Scanner(System.in)) {
             int action;
             do {
+
                 System.out.println("HOSPITAL ACTION:");
                 System.out.println("1. Cafeteria ");
                 System.out.println("2. Pharmacy ");
@@ -111,6 +121,20 @@ public class HospitalMain {
                 action = scanner.nextInt();
 
                 if (action == 1) { // CAFETERIA
+
+                    Predicate<Integer> isCafeActionValid = act -> act >= 1 && act <= 5;
+                    Predicate<Cafeteria> cafeExists = Objects::nonNull;
+
+                    Supplier<LocalDate> getCurrentDate = LocalDate::now;
+
+                    Function<String, Cafeteria> findCafeteria = cafeName -> hospital.getCafeterias().stream()
+                            .filter(each -> each.getName().equals(cafeName))
+                            .findFirst()
+                            .orElse(null);
+
+                    Consumer<Cafeteria> addCafeteria = newCafe -> hospital.addCafeteria(newCafe);
+
+
                     System.out.println("1. Open New one");
                     System.out.println("2. Rename");
                     System.out.println("3. Change the Capacity");
@@ -119,16 +143,13 @@ public class HospitalMain {
                     System.out.print("Choose Cafeteria Action: ");
                     int actionCafe = scanner.nextInt();
 
-                    if (actionCafe >= 1 && actionCafe <= 4) {
+                    if (isCafeActionValid.test(actionCafe)) {
                         System.out.print("Enter the Cafeteria Name: ");
                         String cafeName = scanner.next();
 
-                        Cafeteria currentCafe = hospital.getCafeterias().stream()
-                                .filter(each -> each.getName().equals(cafeName))
-                                .findFirst()
-                                .orElse(null);
+                        Cafeteria currentCafe = findCafeteria.apply(cafeName);
 
-                        if (actionCafe >= 2 && currentCafe == null) {
+                        if ((actionCafe >= 2 && !cafeExists.test(currentCafe)) || currentCafe == null) {
                             LOGGER.info("No this Cafeteria Name: " + cafeName + " in the list of departments. Nothing changed");
                             break;
                         }
@@ -137,9 +158,8 @@ public class HospitalMain {
                             case 1:
                                 System.out.print("Enter the Capacity (number of seats): ");
                                 int capacity = scanner.nextInt();
-                                LocalDate now = LocalDate.now();
-                                Cafeteria newCafe = new Cafeteria(cafeName, now, SeatingCapacityLevel.SMALL);
-                                hospital.addCafeteria(newCafe);
+                                Cafeteria newCafe = new Cafeteria(cafeName, getCurrentDate.get(), SeatingCapacityLevel.SMALL);
+                                addCafeteria.accept(newCafe);
                                 break;
                             case 2:
                                 System.out.print("Enter the new Name: ");
@@ -157,11 +177,10 @@ public class HospitalMain {
                                 currentCafe.setCleanProgress(CleanProgress.COMPLETED);
                                 break;
                             case 5:
-                                System.out.println("Cafeteria List: " + hospital.getCafeterias());
+                                System.out.print("Cafeteria List: " + hospital.getCafeterias());
                                 break;
                         }
                     }
-
                 } else if (action == 2) {  // PHARMACY
                     System.out.println("1. Open New one");
                     System.out.println("2. Rename");
@@ -194,7 +213,8 @@ public class HospitalMain {
                             case 2:
                                 System.out.print("Enter the new Name: ");
                                 String newName = scanner.next();
-                                currentPharm.setName(newName);
+                                ChangeName changeName = Pharmacy::setName;                  // use Function interface
+                                changeName.changeName(currentPharm, "New Name");
                                 LOGGER.info("Pharmacy Name: " + pharmName + " has been changed to " + newName);
                                 break;
                             case 3:
@@ -214,6 +234,8 @@ public class HospitalMain {
                             case 5:
                                 System.out.println("Pharmacy List: " + hospital.getPharmacies());
                                 break;
+                            default:
+                                throw new IllegalStateException("Unexpected value: " + actionPharmacy);
                         }
                     }
                 } else if (action == 3) {  // LABORATORY
@@ -329,7 +351,7 @@ public class HospitalMain {
                             break;
                     }
 
-            } else if (action == 5) {  // Patients
+                } else if (action == 5) {  // Patients
                     System.out.println("1. Create the new patient");
                     System.out.println("2. Discharge the patient");
                     System.out.println("3. Patient disease info");
@@ -446,7 +468,8 @@ public class HospitalMain {
                     System.out.println("2. Remove Employee");
                     System.out.println("3. Update Employee Salary");
                     System.out.println("4. Update Employee Age");
-                    System.out.println("5. List of Employees");
+                    System.out.println("5. List of Employees older then");
+                    System.out.println("6. List of Employees");
                     System.out.print("Choose Employee Action: ");
                     int actionEmployee = scanner.nextInt();
 
@@ -558,6 +581,24 @@ public class HospitalMain {
                             break;
 
                         case 5:
+                            System.out.print("Enter the from age: ");
+                            int fromAge = scanner.nextInt();
+                            System.out.print("Enter the to age: " );
+                            int toAge = scanner.nextInt();
+
+                            Function<Employee, Boolean> isAgeBetween = emp -> {
+                                int age = emp.getAge();
+                                return age >= fromAge && age <= toAge;
+                            };
+
+                            // Using Java Streams to print information about employees
+                            employees.forEach(emp -> {
+                                boolean isWithinRange = isAgeBetween.apply(emp);
+                                System.out.println(emp.getFirstName() + " " + emp.getLastName() +
+                                        " - Is age between 30 and 60? " + isWithinRange);
+                            });
+                            break;
+                        case 6:
                             System.out.println("List of Employees: " + hospital.getEmployees());
                             break;
                     }
