@@ -17,7 +17,7 @@ public class PatientWriter {
 
     public static final Logger LOGGER = LogManager.getLogger(PatientWriter.class);
     private static Path fileName;
-    public static final String path = "/Users/alenakhrenouskaya/Desktop/solvd-laba/src/main/resources";
+    public static final String path = "src/main/resources/patient_card";
 
     public static void patientWrite(Patient patient) {
 

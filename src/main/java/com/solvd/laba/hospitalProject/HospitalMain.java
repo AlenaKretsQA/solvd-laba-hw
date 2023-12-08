@@ -31,13 +31,6 @@ public class HospitalMain {
     private static final Predicate<Integer> isPositiveNumber = num -> num > 0;
 
     public static void main(String[] args) throws InvalidPersonException {
-        Runnable myRunnable = new MyRunnable();
-
-        Thread thread1 = new Thread(myRunnable);
-        Thread thread2 = new Thread(myRunnable);
-
-        thread1.start();
-        thread2.start();
 
         LOGGER.info("Welcome to Hospital application!");
 
@@ -54,11 +47,11 @@ public class HospitalMain {
         patients.add(newPatient);
         PatientWriter.patientWrite(newPatient);
 
-        newPatient = new Patient("Jim", "Ivanoff", "123-123-4567",DiseaseType.ALLERGIES);
+        newPatient = new Patient("Mark", "Ivanoff", "123-123-4567", DiseaseType.ALLERGIES);
         patients.add(newPatient);
         PatientWriter.patientWrite(newPatient);
 
-        newPatient = new Patient("Alice", "Petroff", "888-100-4567",DiseaseType.HEART_DISEASE);
+        newPatient = new Patient("Alice", "Petroff", "888-100-4567", DiseaseType.HEART_DISEASE);
         patients.add(newPatient);
         PatientWriter.patientWrite(newPatient);
 
@@ -66,7 +59,7 @@ public class HospitalMain {
         // Create Cafeterias
         List<Cafeteria> cafeterias = new ArrayList<>();
         cafeterias.add(new Cafeteria("Main_Cafe", LocalDate.now(), SeatingCapacityLevel.SMALL));
-        cafeterias.add(new Cafeteria("Small_Cafe", LocalDate.now(),SeatingCapacityLevel.MEDIUM ));
+        cafeterias.add(new Cafeteria("Small_Cafe", LocalDate.now(), SeatingCapacityLevel.MEDIUM));
 
         // Create Pharmacies
         List<Pharmacy> pharmacies = new ArrayList<>();
@@ -259,10 +252,17 @@ public class HospitalMain {
                                     .filter(each -> each.getName().equals(labName))
                                     .findFirst()
                                     .ifPresentOrElse(
-                                            lab -> lab.addNewLabEquipment(equipName, quant),
+                                            lab -> {
+                                                try {
+                                                    lab.addNewLabEquipment(equipName, quant);
+                                                    LOGGER.info("New equipment added: " + equipName + " - Quantity: " + quant);
+                                                } catch (Exception e) {
+                                                    LOGGER.error("An unexpected error occurred during adding new equipment: " + e.getMessage());
+                                                }
+                                            },
                                             () -> LOGGER.error("No Lab name found")
                                     );
-                            break;
+                                break;
                         case 2:
                             System.out.print("Enter Lab name: ");
                             labName = scanner.next();
@@ -276,12 +276,20 @@ public class HospitalMain {
                                     .findFirst()
                                     .ifPresentOrElse(
                                             lab -> {
-                                                try {
-                                                    lab.removeLabEquipment(equipName, quant);
-                                                } catch (LaboratoryInvalidQuantityEquipmentException e) {
-                                                    throw new RuntimeException(e);
-                                                } catch (LaboratoryInvalidEquipmentNameException e) {
-                                                    throw new RuntimeException(e);
+                                                Map<String, Integer> equipment = lab.getEquipment();
+                                                if (equipment.containsKey(equipName)) {
+                                                    try {
+                                                        lab.removeLabEquipment(equipName, quant);
+                                                        LOGGER.info("Equipment removed: " + equipName + " - Quantity: " + quant);
+                                                    } catch (LaboratoryInvalidQuantityEquipmentException e) {
+                                                        LOGGER.error("Invalid quantity for equipment removal: " + e.getMessage());
+                                                    } catch (LaboratoryInvalidEquipmentNameException e) {
+                                                        LOGGER.error("Invalid equipment name for removal: " + e.getMessage());
+                                                    } catch (Exception e) {
+                                                        LOGGER.error("An unexpected error occurred during equipment removal: " + e.getMessage());
+                                                    }
+                                                }  else {
+                                                    LOGGER.error("Equipment not found in the lab: " + equipName);
                                                 }
                                             },
                                             () -> LOGGER.error("No Lab name found")
@@ -314,7 +322,17 @@ public class HospitalMain {
                                             lab -> {
                                                 Map<String, Integer> equipment = lab.getEquipment();
                                                 if (equipment.isEmpty()) {
-                                                    LOGGER.info("No equipment found for this lab.");
+                                                    LOGGER.info("No equipment found for this lab. Adding new entry.");
+
+                                                    // Add new entry to the equipment map
+                                                    System.out.print("Enter new equipment name: ");
+                                                    String newEquipName = scanner.next();
+                                                    System.out.print("Enter quantity for the new equipment: ");
+                                                    int newEquipQuantity = scanner.nextInt();
+
+                                                    lab.addNewLabEquipment(newEquipName, newEquipQuantity);
+
+                                                    LOGGER.info("New equipment added: " + newEquipName + " - Quantity: " + newEquipQuantity);
                                                 } else {
                                                     System.out.println("Equipment list for " + lab.getName() + ":");
                                                     equipment.forEach((key, value) -> System.out.println(key + " - Quantity: " + value));
@@ -455,7 +473,7 @@ public class HospitalMain {
                             fName = scanner.next();
                             System.out.print("Enter the Last name: ");
                             lName = scanner.next();
-                            Patient patientFromFile = PatientReader.patientRead(lName + "." + fName );
+                            Patient patientFromFile = PatientReader.patientRead(lName + "." + fName);
                             System.out.println("Patient from File " + patientFromFile);
 
                             break;
@@ -583,7 +601,7 @@ public class HospitalMain {
                         case 5:
                             System.out.print("Enter the from age: ");
                             int fromAge = scanner.nextInt();
-                            System.out.print("Enter the to age: " );
+                            System.out.print("Enter the to age: ");
                             int toAge = scanner.nextInt();
 
                             Function<Employee, Boolean> isAgeBetween = emp -> {

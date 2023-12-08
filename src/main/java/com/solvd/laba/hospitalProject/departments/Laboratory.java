@@ -51,16 +51,26 @@ public class Laboratory extends Department {
     }
 
     public void removeLabEquipment(String name, int quantity) throws LaboratoryInvalidQuantityEquipmentException, LaboratoryInvalidEquipmentNameException {
-        if (!equipment.containsKey(name)) {
-            throw new LaboratoryInvalidEquipmentNameException("Wrong equipment name");
-        }
+        //Optional.ofNullable(equipment)  // create Optional. If equipment - null, creates an empty Optional; otherwise - wraps the equipment map in the Optional.
+        //.ifPresent(equipmentMap -> {  // heck if the Optional contains a non-null value
 
-        int equipNowNumber = equipment.get(name);
-        if (equipNowNumber > quantity) {
-            equipment.put(name, equipNowNumber - quantity);
-        } else {
-            throw new LaboratoryInvalidQuantityEquipmentException("Not this number of equipment");
+        if (!equipment.containsKey(name)) {
+            LOGGER.info("Equipment not found: " + name);
+            return;
         }
+        int equipNowNumber = equipment.get(name);
+        if (equipNowNumber > 0) {
+            int quantityToRemove = Math.min(quantity, equipNowNumber);
+            equipment.put(name, equipNowNumber - quantityToRemove);
+            LOGGER.info("Equipment removed: " + name + " - Quantity: " + quantityToRemove);
+
+            if (quantityToRemove < quantity) {
+                LOGGER.warn("Requested to remove more equipment than available for: " + name);
+            }
+        } else {
+            LOGGER.warn("Attempting to remove equipment, but the current quantity is 0 for: " + name);
+        }
+        // });
     }
 
     @Override

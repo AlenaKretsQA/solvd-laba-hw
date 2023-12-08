@@ -18,8 +18,7 @@ import java.util.List;
 public class PatientReader {
 
     public static final Logger LOGGER = LogManager.getLogger(PatientReader.class);
-    public static final String path = "/Users/alenakhrenouskaya/Desktop/solvd-laba/src/main/resources";
-
+    public static final String path = "src/main/resources/patient_card";
     public static Patient patientRead(String patientName) {
 
         Path fileName = Paths.get(path + patientName + ".txt");

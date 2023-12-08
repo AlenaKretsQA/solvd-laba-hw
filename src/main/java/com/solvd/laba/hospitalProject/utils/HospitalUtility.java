@@ -1,5 +1,6 @@
-package com.solvd.laba.hospitalProject;
+package com.solvd.laba.hospitalProject.utils;
 
+import com.solvd.laba.hospitalProject.Hospital;
 import com.solvd.laba.hospitalProject.people.employees.Employee;
 import com.solvd.laba.hospitalProject.departments.MedicalDepartment;
 import com.solvd.laba.hospitalProject.people.patients.Patient;
@@ -35,8 +36,6 @@ public class HospitalUtility {
         }
         System.out.println("Medical department with name " + departmentName + " not found.");
     }
-
-    // Utility method to print the list of employees in the hospital
     public static void printEmployeeList(Hospital hospital) {
         List<Employee> employees;
         employees = null;
