@@ -1,20 +1,25 @@
 package com.solvd.laba.hospitalProject.multithreading;
 
-import java.util.concurrent.BlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ConnectionPool {
     private static ConnectionPool instance;
-    private final BlockingQueue<Connection> pool;
+    private final List<Connection> pool;
+    private final Lock lock;
 
     private ConnectionPool(int size) {
-        this.pool = new LinkedBlockingQueue<>(size);
+        this.pool = new ArrayList<>(size);
+        this.lock = new ReentrantLock();
 
         for (int i = 0; i < size; i++) {
             pool.add(new Connection());
         }
     }
+
     public static synchronized ConnectionPool getInstance(int size) {
         if (instance == null) {
             instance = new ConnectionPool(size);
@@ -23,11 +28,24 @@ public class ConnectionPool {
     }
 
     public Connection getConnection() throws InterruptedException {
-        return pool.take();
+        lock.lock();
+        try {
+            while (pool.isEmpty()) {
+                Thread.sleep(100);
+            }
+            return pool.remove(pool.size() - 1);
+        } finally {
+            lock.unlock();
+        }
     }
 
     public void releaseConnection(Connection connection) {
-        pool.offer(connection);
+        lock.lock();
+        try {
+            pool.add(connection);
+        } finally {
+            lock.unlock();
+        }
     }
 
     public CompletableFuture<Connection> getConnectionAsync() {
@@ -40,4 +58,3 @@ public class ConnectionPool {
         });
     }
 }
-
